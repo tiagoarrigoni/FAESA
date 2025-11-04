@@ -1,6 +1,6 @@
-# 🌐 Portfólio Pessoal - Tiago Arrigoni
+# 🌐 C2 - Desenvolvimento WEB - Tiago Arrigoni
 
-Este é meu portfólio profissional desenvolvido com **HTML, CSS e Bootstrap 4**, hospedado via **GitHub Pages**.
+Este é meu portfólio profissional desenvolvido com **HTML, CSS e Bootstrap 4**
 
 ## 📄 Estrutura
 - **index.html**: Página principal
@@ -17,7 +17,4 @@ Este é meu portfólio profissional desenvolvido com **HTML, CSS e Bootstrap 4**
 - Rodapé
 
 ## 🔗 Acesse o Portfólio
-👉 [Portifólio](https://github.com/tiagoarrigoni)
-
----
-Desenvolvido por Tiago Arrigoni.
+👉 [Meus Projetos](https://github.com/tiagoarrigoni)
