@@ -20,4 +20,4 @@ Este é meu portfólio profissional desenvolvido com **HTML, CSS e Bootstrap 4**
 👉 [https://tiagoarrigoni.github.io/portfolio-tiago](https://tiagoarrigoni.github.io/portfolio-tiago)
 
 ---
-Feito com ❤️ por Tiago Arrigoni.
+Desenvolvido por Tiago Arrigoni.
