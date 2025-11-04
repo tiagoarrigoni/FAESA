@@ -17,7 +17,7 @@ Este é meu portfólio profissional desenvolvido com **HTML, CSS e Bootstrap 4**
 - Rodapé
 
 ## 🔗 Acesse o Portfólio
-👉 [https://github.com/tiagoarrigoni](Portifólio)
+👉 [Portifólio](https://github.com/tiagoarrigoni)
 
 ---
 Desenvolvido por Tiago Arrigoni.
