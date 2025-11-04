@@ -1,5 +1,4 @@
-# 🌐 C2 - Desenvolvimento WEB - Tiago Arrigoni
-
+# 🌐 C2 - Desenvolvimento WEB 
 Este é meu portfólio profissional desenvolvido com **HTML, CSS e Bootstrap 4**
 
 ## 📄 Estrutura
@@ -16,5 +15,5 @@ Este é meu portfólio profissional desenvolvido com **HTML, CSS e Bootstrap 4**
 - Contato
 - Rodapé
 
-## 🔗 Acesse o Portfólio
+## 🔗 Acesse o Portfólio Completo
 👉 [Meus Projetos](https://github.com/tiagoarrigoni)
