@@ -13,13 +13,13 @@ def menu():
     
     # Mostrar informações apenas se o campeonato não estiver iniciado
     if not campeonato_iniciado:
-        print("+      PROJETO FINAL LABORATÓRIO DE PROGRAMAÇÃO 1      +")
+        print("+      PROJETO FINAL LABORATORIO DE PROGRAMACAO 1      +")
         print("+------------------------------------------------------+")
         print("+ ALUNO: TIAGO ARRIGONI                                +")
         print("+------------------------------------------------------+")
         print("+ PROFESSORA: RENATA LARANJA                           +")
         print("+------------------------------------------------------+")
-        print("+ CURSO: ANÁLISE E DESENVOLVIMENTO DE SISTEMAS         +")
+        print("+ CURSO: ANALISE E DESENVOLVIMENTO DE SISTEMAS         +")
         print("-------------------------------------------------------+")
 
         print("\n========================================================")
@@ -36,12 +36,12 @@ def menu():
     else:  # Se o campeonato já foi iniciado
         print("-1. Resetar Campeonato")
     
-    print("2. Relatório Pontuações")
-    print("3. Relatório Recompensas")
-    print("4. Relatório Geral")
+    print("2. Relatorio Pontuacoes")
+    print("3. Relatorio Recompensas")
+    print("4. Relatorio Geral")
     print("5. Atualizar Dados")
     print("6. Sair")
-    return input("\nEscolha uma opção: ")
+    return input("\nEscolha uma opcao: ")
 
 # Menu Principal - Loop de Opções disponíveis
 while True:
