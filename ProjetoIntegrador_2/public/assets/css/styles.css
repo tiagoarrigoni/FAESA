@@ -5,8 +5,10 @@
 :root {
   /*========== Colors ==========*/
   /*Color mode HSL(hue, saturation, lightness)*/
-  --white-color: hsl(0, 0%, 100%);
-  --black-color: hsl(0, 0%, 0%);
+  --white-color: #e6f7ff; /* fundo azul bebê */
+  --black-color: #002b36; /* contraste suave */
+
+
 
   /*========== Font and typography ==========*/
   /*.5rem = 8px | 1rem = 16px ...*/
@@ -147,11 +149,15 @@ img {
   width: 100%;
   padding: 1rem;
   margin-bottom: 1rem;
-  background-color: var(--white-color);
+  background-color: #0096c7;
   border-radius: 4rem;
-  color: var(--black-color);
+  color: white;
   font-weight: 500;
   cursor: pointer;
+}
+
+.login__button:hover {
+  background-color: #ffc72b; /* tom mais escuro ao passar o mouse */
 }
 
 .login__register {
