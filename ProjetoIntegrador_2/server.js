@@ -1,104 +1,145 @@
-const express = require("express");
-const sqlite3 = require("sqlite3").verbose();
-const bodyParser = require("body-parser");
-const path = require("path");
+import express from "express";
+import bodyParser from "body-parser";
+import sqlite3 from "sqlite3";
+import path from "path";
+import bcrypt from "bcrypt";
+import session from "express-session";
+import { fileURLToPath } from "url";
 
+// ======= Configuração básica =======
 const app = express();
-const db = new sqlite3.Database("./database.db");
-console.log("📂 Banco de dados usado:", path.resolve("./database.db"));
+const PORT = 3000;
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Middleware
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "public")));
-
-// 🧱 Cria tabela de usuários se não existir
-db.run(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE,
-    email TEXT,
-    password TEXT
-  )
-`);
-
-app.post("/register", (req, res) => {
-  // 👇 Captura os dados enviados pelo formulário
-  const { username, email, password } = req.body;
-
-  console.log("📩 Requisição POST recebida em /register");
-  console.log("📦 Dados recebidos:", req.body);
-
-  if (!username || !email || !password) {
-    return res.send(`
-      <script>
-        alert("Preencha todos os campos!");
-        window.location.href = "/register.html";
-      </script>
-    `);
-  }
-
-  db.run(
-    `INSERT INTO users (username, email, password) VALUES (?, ?, ?)`,
-    [username, email, password],
-    (err) => {
-      if (err) {
-        console.error("❌ Erro ao cadastrar:", err.message);
-        return res.send(`
-          <script>
-            alert("Erro ao cadastrar: Usuário já existe ou dados inválidos!");
-            window.location.href = "/register.html";
-          </script>
-        `);
-      }
-
-      console.log(`✅ Usuário cadastrado: ${username}`);
-      res.send(`
-        <script>
-          alert("Bem-vindo, ${username}! Cadastro realizado com sucesso!");
-          window.location.href = "/index.html";
-        </script>
-      `);
-    }
-  );
+// ======= Banco SQLite3 =======
+const db = new sqlite3.Database("./database.db", (err) => {
+  if (err) console.error("Erro ao conectar ao banco:", err);
+  else console.log("✅ Banco SQLite conectado com sucesso!");
 });
 
+// Criação das tabelas
+db.serialize(() => {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE,
+      email TEXT UNIQUE,
+      password TEXT
+    )
+  `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS test_results (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      test_type TEXT,
+      score INTEGER,
+      result_text TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+});
+
+// ======= Middlewares =======
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(express.static("public"));
+app.use(
+  session({
+    secret: "hec-secret",
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+
+// ======= Autenticação =======
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
+  db.get("SELECT * FROM users WHERE username = ?", [username], async (err, user) => {
+    if (err) return res.status(500).send("Erro no servidor");
+    if (!user) return res.status(400).send("Usuário não encontrado");
 
-  db.get(
-    `SELECT * FROM users WHERE username = ? AND password = ?`,
-    [username, password],
-    (err, row) => {
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(400).send("Senha incorreta");
+
+    req.session.userId = user.id;
+    res.redirect("/painel.html");
+  });
+});
+
+app.post("/register", async (req, res) => {
+  const { username, email, password } = req.body;
+  const hashed = await bcrypt.hash(password, 10);
+  db.run(
+    "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
+    [username, email, hashed],
+    (err) => {
       if (err) {
-        console.error("Erro ao verificar login:", err.message);
-        return res.status(500).send("Erro no servidor.");
+        console.error(err);
+        return res.status(400).send("Erro ao registrar usuário");
       }
-
-      if (row) {
-        console.log(`✅ Login realizado: ${row.username}`);
-        res.send(`
-          <script>
-            alert("Login bem-sucedido! Bem-vindo, ${row.username}!");
-            window.location.href = "/painel.html";
-          </script>
-        `);
-      } else {
-        res.send(`
-          <script>
-            alert("Usuário ou senha incorretos!");
-            window.location.href = "/index.html";
-          </script>
-        `);
-      }
+      res.redirect("/index.html");
     }
   );
 });
 
+// ======= Middleware de login =======
+function auth(req, res, next) {
+  if (!req.session.userId) return res.status(401).send("Não autorizado");
+  next();
+}
 
-// 🚀 Inicia o servidor
-const PORT = 3000;
+// ======= Salvar resultado do teste =======
+app.post("/save-test", auth, (req, res) => {
+  const { test_type, score, result_text } = req.body;
+  const userId = req.session.userId;
+
+  db.get(
+    "SELECT * FROM test_results WHERE user_id = ? AND test_type = ? ORDER BY created_at DESC LIMIT 1",
+    [userId, test_type],
+    (err, lastTest) => {
+      if (err) return res.status(500).send("Erro ao verificar último teste");
+
+      if (lastTest) {
+        const lastDate = new Date(lastTest.created_at);
+        const now = new Date();
+        const diffDays = (now - lastDate) / (1000 * 60 * 60 * 24);
+        if (diffDays < 30) {
+          return res
+            .status(403)
+            .json({ message: `Você já fez o teste ${test_type} há menos de 30 dias.` });
+        }
+      }
+
+      db.run(
+        "INSERT INTO test_results (user_id, test_type, score, result_text) VALUES (?, ?, ?, ?)",
+        [userId, test_type, score, result_text],
+        (err) => {
+          if (err) return res.status(500).send("Erro ao salvar resultado");
+          res.json({ message: "Resultado salvo com sucesso!" });
+        }
+      );
+    }
+  );
+});
+
+// ======= Ver histórico =======
+app.get("/my-tests", auth, (req, res) => {
+  const userId = req.session.userId;
+  db.all(
+    "SELECT test_type, score, result_text, created_at FROM test_results WHERE user_id = ? ORDER BY created_at DESC",
+    [userId],
+    (err, results) => {
+      if (err) return res.status(500).send("Erro ao buscar histórico");
+      res.json(results);
+    }
+  );
+});
+
+// ======= Inicia o servidor =======
 app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
 });

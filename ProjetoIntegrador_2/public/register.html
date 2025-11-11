@@ -14,9 +14,8 @@
     <title>Cadastro - Bedimcode</title>
 </head>
 
-<body>
+<body class="register-theme">
     <div class="login">
-        <img src="assets/img/login-bg.png" alt="image" class="login__bg">
 
         <!-- Formulário de Cadastro -->
         <form action="/register" method="POST" class="login__form">
@@ -48,11 +47,12 @@
             <button type="submit" class="login__button">Cadastrar</button>
 
             <div class="login__register">
-                Já tem uma conta? <a href="../public/index.html">Voltar ao login</a>
+                Já tem uma conta? <a href="index.html">Voltar ao login</a>
             </div>
         </form>
     </div>
 
+    <!-- Script de validação de senha -->
     <script>
         document.querySelector('.login__form').addEventListener('submit', function (e) {
             const pass = document.querySelector('input[name="password"]').value;
@@ -63,7 +63,6 @@
             }
         });
     </script>
-
 </body>
 
 </html>

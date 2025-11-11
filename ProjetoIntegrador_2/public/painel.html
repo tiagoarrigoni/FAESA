@@ -1,24 +1,45 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!--=============== REMIXICONS ===============-->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/3.5.0/remixicon.css" crossorigin="">
+
+  <!--=============== CSS PRINCIPAL ===============-->
+  <link rel="stylesheet" href="assets/css/styles.css">
+
   <title>Painel do Usuário</title>
-  <link rel="stylesheet" href="assets/css/painel.css">
 </head>
-<body>
+
+<body class="painel-theme">
   <div class="login">
-    <img src="assets/img/login-bg.png" alt="image" class="login__bg">
+
+    <!-- Conteúdo central -->
     <div class="login__form">
       <h1 class="login__title">Bem-vindo ao Painel</h1>
-      <p style="text-align:center;margin-bottom:20px;">Escolha um teste para realizar:</p>
+      <p style="text-align:center; margin-bottom: 1.5rem;">Escolha um teste para realizar:</p>
 
-      <button class="login__button" onclick="location.href='stress.html'">Realizar Teste de Stress</button>
-      <button class="login__button" onclick="location.href='perfil.html'">Realizar Teste de Perfil</button>
-      <button class="login__button" onclick="location.href='humor.html'">Realizar Teste de Humor</button>
+      <div class="login__inputs">
+        <button class="login__button" onclick="location.href='stress.html'">
+          <i class="ri-mental-health-fill"></i>&nbsp; Teste de Stress
+        </button>
 
-      <div class="login__register">
-        <a href="index.html">Sair</a>
+        <button class="login__button" onclick="location.href='perfil.html'">
+          <i class="ri-user-smile-fill"></i>&nbsp; Teste de Perfil
+        </button>
+
+        <button class="login__button" onclick="location.href='humor.html'">
+          <i class="ri-emotion-happy-fill"></i>&nbsp; Teste de Humor
+        </button>
+      </div>
+
+      <div class="login__register" style="margin-top: 1rem;">
+        <a href="index.html" style="color: var(--white-color); font-weight: 500;">
+          <i class="ri-logout-box-r-line"></i> Sair
+        </a>
       </div>
     </div>
   </div>

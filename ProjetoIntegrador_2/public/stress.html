@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Stress</title>
+    <link rel="stylesheet" href="assets/css/styleTeste.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/3.5.0/remixicon.css">
+</head>
+
+<body class="teste-theme">
+    <div class="teste-container">
+        <form id="stressForm" class="teste-form">
+            <h1 class="teste-title">Teste de Stress</h1>
+
+            <!-- Área da pergunta -->
+            <div id="question-box" class="question-box">
+                <p id="question-text"></p>
+                <div class="options">
+                    <label><input type="radio" name="answer" value="1" required> 1 - Nunca</label>
+                    <label><input type="radio" name="answer" value="2"> 2 - Raramente</label>
+                    <label><input type="radio" name="answer" value="3"> 3 - Às vezes</label>
+                    <label><input type="radio" name="answer" value="4"> 4 - Frequentemente</label>
+                    <label><input type="radio" name="answer" value="5"> 5 - Sempre</label>
+                </div>
+            </div>
+
+            <!-- Botões de navegação -->
+            <div class="buttons">
+                <button type="button" id="nextBtn" class="next-button">Avançar</button>
+                <button type="submit" id="submitBtn" class="submit-button" style="display:none;">Ver Resultado</button>
+            </div>
+        </form>
+
+        <div id="result" class="teste-result" style="display:none;"></div>
+    </div>
+
+    <script>
+        const questions = [
+            "Costumo me sentir sobrecarregado com minhas tarefas.",
+            "Tenho dificuldades para relaxar mesmo após o trabalho.",
+            "Meu sono é frequentemente agitado ou insuficiente.",
+            "Fico irritado facilmente por pequenas coisas.",
+            "Sinto dores de cabeça ou musculares com frequência.",
+            "Tenho dificuldade de concentração.",
+            "Sinto que o tempo nunca é suficiente para o que preciso fazer.",
+            "Tenho sentido falta de energia ou disposição.",
+            "Costumo pensar constantemente nos meus problemas.",
+            "Tenho pouca paciência com pessoas ao meu redor.",
+            "Meu corpo dá sinais de cansaço físico frequentemente.",
+            "Tenho dificuldade em “desligar” da rotina mesmo nos fins de semana."
+        ];
+
+        let currentQuestion = 0;
+        const questionText = document.getElementById("question-text");
+        const nextBtn = document.getElementById("nextBtn");
+        const submitBtn = document.getElementById("submitBtn");
+        const form = document.getElementById("stressForm");
+        const resultDiv = document.getElementById("result");
+
+        const answers = [];
+
+        // Mostra a primeira pergunta
+        questionText.textContent = questions[currentQuestion];
+
+        nextBtn.addEventListener("click", () => {
+            const selected = document.querySelector('input[name="answer"]:checked');
+            if (!selected) {
+                alert("Selecione uma opção antes de avançar!");
+                return;
+            }
+
+            answers.push(parseInt(selected.value));
+            selected.checked = false;
+            currentQuestion++;
+
+            if (currentQuestion < questions.length) {
+                questionText.textContent = questions[currentQuestion];
+            } else {
+                nextBtn.style.display = "none";
+                submitBtn.style.display = "block";
+            }
+        });
+
+        // Finaliza o teste
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault(); // Impede recarregamento da página
+
+            // Cálculo da média
+            const soma = answers.reduce((a, b) => a + b, 0);
+            const media = soma / questions.length;
+
+            let msg = "";
+            if (media <= 2) msg = "Seu nível de stress está baixo. Você demonstra equilíbrio e boa gestão emocional.";
+            else if (media <= 3.5) msg = "Nível moderado de stress. Tente desacelerar e cuidar da sua rotina.";
+            else msg = "Alto nível de stress. Considere técnicas de relaxamento e, se necessário, apoio profissional.";
+
+            // Envia resultado ao servidor
+            try {
+                const response = await fetch("/save-test", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        test_type: "stress",
+                        score: soma,
+                        result_text: msg
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    alert(data.message || "Você já fez este teste nos últimos 30 dias.");
+                    return (window.location.href = "painel.html");
+                }
+
+                // Exibe resultado final
+                form.style.display = "none";
+                resultDiv.innerHTML = `
+        <h2>Resultado do Teste de Stress</h2>
+        <p>${msg}</p>
+        <button onclick="location.href='painel.html'" class="back-button">Voltar ao Painel</button>
+      `;
+                resultDiv.style.display = "block";
+            } catch (error) {
+                console.error("Erro ao salvar resultado:", error);
+                alert("Erro ao enviar o resultado para o servidor.");
+            }
+        });
+    </script>
+
+</body>
+
+</html>

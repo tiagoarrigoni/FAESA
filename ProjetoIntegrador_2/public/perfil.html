@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teste de Perfil</title>
+  <link rel="stylesheet" href="assets/css/styleTeste.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/3.5.0/remixicon.css">
+</head>
+
+<body class="teste-theme">
+  <div class="teste-container">
+    <form id="perfilForm" class="teste-form">
+      <h1 class="teste-title">Teste de Perfil Comportamental</h1>
+
+      <!-- Pergunta -->
+      <div id="question-box" class="question-box">
+        <p id="question-text"></p>
+        <div class="options">
+          <label><input type="radio" name="answer" value="1" required> 1 - Discordo totalmente</label>
+          <label><input type="radio" name="answer" value="2"> 2 - Discordo parcialmente</label>
+          <label><input type="radio" name="answer" value="3"> 3 - Neutro</label>
+          <label><input type="radio" name="answer" value="4"> 4 - Concordo</label>
+          <label><input type="radio" name="answer" value="5"> 5 - Concordo totalmente</label>
+        </div>
+      </div>
+
+      <!-- Botões -->
+      <div class="buttons">
+        <button type="button" id="nextBtn" class="next-button">Avançar</button>
+        <button type="submit" id="submitBtn" class="submit-button" style="display:none;">Ver Resultado</button>
+      </div>
+    </form>
+
+    <div id="result" class="teste-result" style="display:none;"></div>
+  </div>
+
+  <script>
+    const questions = [
+      "Gosto de liderar e tomar decisões rapidamente.",
+      "Sou uma pessoa calma e paciente.",
+      "Gosto de desafios e metas claras.",
+      "Prefiro evitar conflitos e manter a harmonia.",
+      "Sou uma pessoa detalhista e organizada.",
+      "Gosto de socializar e estar com outras pessoas.",
+      "Costumo pensar antes de agir.",
+      "Adapto-me bem a mudanças e imprevistos.",
+      "Gosto de planejar antes de executar.",
+      "Tenho facilidade em convencer outras pessoas.",
+      "Sou movido por resultados e desempenho.",
+      "Prefiro estabilidade a riscos."
+    ];
+
+    let currentQuestion = 0;
+    const questionText = document.getElementById("question-text");
+    const nextBtn = document.getElementById("nextBtn");
+    const submitBtn = document.getElementById("submitBtn");
+    const form = document.getElementById("perfilForm");
+    const resultDiv = document.getElementById("result");
+
+    const answers = [];
+
+    questionText.textContent = questions[currentQuestion];
+
+    nextBtn.addEventListener("click", () => {
+      const selected = document.querySelector('input[name="answer"]:checked');
+      if (!selected) {
+        alert("Selecione uma opção antes de avançar!");
+        return;
+      }
+      answers.push(parseInt(selected.value));
+      selected.checked = false;
+      currentQuestion++;
+
+      if (currentQuestion < questions.length) {
+        questionText.textContent = questions[currentQuestion];
+      } else {
+        nextBtn.style.display = "none";
+        submitBtn.style.display = "block";
+      }
+    });
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const soma = answers.reduce((a, b) => a + b, 0);
+      const media = soma / questions.length;
+      let msg = "";
+
+      if (media <= 2) msg = "Perfil tranquilo e colaborativo, focado em estabilidade e harmonia.";
+      else if (media <= 3.5) msg = "Perfil equilibrado, com flexibilidade entre foco e sociabilidade.";
+      else msg = "Perfil ativo e determinado, com alta iniciativa e capacidade de liderança.";
+
+      form.style.display = "none";
+      resultDiv.innerHTML = `<h2>Resultado</h2><p>${msg}</p><button onclick="location.href='painel.html'" class="back-button">Voltar ao Painel</button>`;
+      resultDiv.style.display = "block";
+    });
+  </script>
+</body>
+
+</html>

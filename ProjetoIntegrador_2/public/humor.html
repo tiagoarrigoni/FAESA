@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Humor</title>
+    <link rel="stylesheet" href="assets/css/styleTeste.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/3.5.0/remixicon.css">
+</head>
+
+<body class="teste-theme">
+    <div class="teste-container">
+        <form id="humorForm" class="teste-form">
+            <h1 class="teste-title">Teste de Humor Diário</h1>
+
+            <div id="question-box" class="question-box">
+                <p id="question-text"></p>
+                <div class="options">
+                    <label><input type="radio" name="answer" value="1" required> 1 - Nunca</label>
+                    <label><input type="radio" name="answer" value="2"> 2 - Raramente</label>
+                    <label><input type="radio" name="answer" value="3"> 3 - Às vezes</label>
+                    <label><input type="radio" name="answer" value="4"> 4 - Frequentemente</label>
+                    <label><input type="radio" name="answer" value="5"> 5 - Sempre</label>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button type="button" id="nextBtn" class="next-button">Avançar</button>
+                <button type="submit" id="submitBtn" class="submit-button" style="display:none;">Ver Resultado</button>
+            </div>
+        </form>
+
+        <div id="result" class="teste-result" style="display:none;"></div>
+    </div>
+
+    <script>
+        const questions = [
+            "Tenho me sentido animado(a) e motivado(a).",
+            "Tenho vontade de interagir com outras pessoas.",
+            "Tenho pensamentos positivos sobre o futuro.",
+            "Tenho rido ou sorrido com facilidade.",
+            "Consigo lidar bem com contratempos.",
+            "Tenho dormido bem e acordado disposto(a).",
+            "Tenho me sentido satisfeito(a) comigo mesmo(a).",
+            "Tenho aproveitado os momentos simples do dia.",
+            "Tenho me sentido em paz e tranquilo(a).",
+            "Tenho conseguido manter a calma sob pressão.",
+            "Tenho praticado algo que me faz feliz.",
+            "Tenho sentido gratidão pelas coisas da vida."
+        ];
+
+        let currentQuestion = 0;
+        const questionText = document.getElementById("question-text");
+        const nextBtn = document.getElementById("nextBtn");
+        const submitBtn = document.getElementById("submitBtn");
+        const form = document.getElementById("humorForm");
+        const resultDiv = document.getElementById("result");
+
+        const answers = [];
+
+        questionText.textContent = questions[currentQuestion];
+
+        nextBtn.addEventListener("click", () => {
+            const selected = document.querySelector('input[name="answer"]:checked');
+            if (!selected) {
+                alert("Selecione uma opção antes de avançar!");
+                return;
+            }
+            answers.push(parseInt(selected.value));
+            selected.checked = false;
+            currentQuestion++;
+
+            if (currentQuestion < questions.length) {
+                questionText.textContent = questions[currentQuestion];
+            } else {
+                nextBtn.style.display = "none";
+                submitBtn.style.display = "block";
+            }
+        });
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const soma = answers.reduce((a, b) => a + b, 0);
+            const media = soma / questions.length;
+
+            let msg = "";
+            if (media <= 2) msg = "Seu nível de stress está baixo.";
+            else if (media <= 3.5) msg = "Nível moderado de stress.";
+            else msg = "Alto nível de stress.";
+
+            // Envia ao servidor
+            const response = await fetch("/save-test", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    test_type: "stress",
+                    score: soma,
+                    result_text: msg,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                form.style.display = "none";
+                resultDiv.innerHTML = `<h2>Resultado</h2><p>${msg}</p><button onclick="location.href='painel.html'" class="back-button">Voltar ao Painel</button>`;
+                resultDiv.style.display = "block";
+            } else {
+                alert(data.message);
+            }
+        });
+
+
+    </script>
+</body>
+
+</html>
