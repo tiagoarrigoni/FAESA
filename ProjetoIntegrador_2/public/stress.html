@@ -58,12 +58,34 @@
         const submitBtn = document.getElementById("submitBtn");
         const form = document.getElementById("stressForm");
         const resultDiv = document.getElementById("result");
-
         const answers = [];
 
-        // Mostra a primeira pergunta
-        questionText.textContent = questions[currentQuestion];
+        // 👇 NOVO: Verifica se já existe resultado do teste no carregamento
+        window.addEventListener("DOMContentLoaded", async () => {
+            try {
+                const response = await fetch("/get-test?test_type=stress");
+                const data = await response.json();
 
+                if (data.exists) {
+                    // Já existe resultado salvo
+                    form.style.display = "none";
+                    resultDiv.innerHTML = `
+                    <h2>Resultado do Teste de Stress</h2>
+                    <p>${data.result_text}</p>
+                    <button onclick="location.href='painel.html'" class="back-button">Voltar ao Painel</button>
+                `;
+                    resultDiv.style.display = "block";
+                } else {
+                    // Exibe a primeira pergunta normalmente
+                    questionText.textContent = questions[currentQuestion];
+                }
+            } catch (err) {
+                console.error("Erro ao verificar teste:", err);
+                alert("Erro ao verificar se o teste já foi feito.");
+            }
+        });
+
+        // Avança perguntas
         nextBtn.addEventListener("click", () => {
             const selected = document.querySelector('input[name="answer"]:checked');
             if (!selected) {
@@ -85,9 +107,8 @@
 
         // Finaliza o teste
         form.addEventListener("submit", async (e) => {
-            e.preventDefault(); // Impede recarregamento da página
+            e.preventDefault();
 
-            // Cálculo da média
             const soma = answers.reduce((a, b) => a + b, 0);
             const media = soma / questions.length;
 
@@ -96,7 +117,6 @@
             else if (media <= 3.5) msg = "Nível moderado de stress. Tente desacelerar e cuidar da sua rotina.";
             else msg = "Alto nível de stress. Considere técnicas de relaxamento e, se necessário, apoio profissional.";
 
-            // Envia resultado ao servidor
             try {
                 const response = await fetch("/save-test", {
                     method: "POST",
@@ -118,10 +138,10 @@
                 // Exibe resultado final
                 form.style.display = "none";
                 resultDiv.innerHTML = `
-        <h2>Resultado do Teste de Stress</h2>
-        <p>${msg}</p>
-        <button onclick="location.href='painel.html'" class="back-button">Voltar ao Painel</button>
-      `;
+                <h2>Resultado do Teste de Stress</h2>
+                <p>${msg}</p>
+                <button onclick="location.href='painel.html'" class="back-button">Voltar ao Painel</button>
+            `;
                 resultDiv.style.display = "block";
             } catch (error) {
                 console.error("Erro ao salvar resultado:", error);
@@ -129,6 +149,7 @@
             }
         });
     </script>
+
 
 </body>
 

@@ -1,47 +1,116 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!--=============== REMIXICONS ===============-->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/3.5.0/remixicon.css" crossorigin="">
-
-  <!--=============== CSS PRINCIPAL ===============-->
-  <link rel="stylesheet" href="assets/css/styles.css">
-
   <title>Painel do Usuário</title>
+  <link rel="stylesheet" href="assets/css/painel.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/3.5.0/remixicon.css">
 </head>
-
-<body class="painel-theme">
-  <div class="login">
-
-    <!-- Conteúdo central -->
-    <div class="login__form">
-      <h1 class="login__title">Bem-vindo ao Painel</h1>
-      <p style="text-align:center; margin-bottom: 1.5rem;">Escolha um teste para realizar:</p>
-
-      <div class="login__inputs">
-        <button class="login__button" onclick="location.href='stress.html'">
-          <i class="ri-mental-health-fill"></i>&nbsp; Teste de Stress
-        </button>
-
-        <button class="login__button" onclick="location.href='perfil.html'">
-          <i class="ri-user-smile-fill"></i>&nbsp; Teste de Perfil
-        </button>
-
-        <button class="login__button" onclick="location.href='humor.html'">
-          <i class="ri-emotion-happy-fill"></i>&nbsp; Teste de Humor
-        </button>
-      </div>
-
-      <div class="login__register" style="margin-top: 1rem;">
-        <a href="index.html" style="color: var(--white-color); font-weight: 500;">
-          <i class="ri-logout-box-r-line"></i> Sair
-        </a>
+<body>
+  <header class="painel-header">
+    <div class="avatar-wrapper">
+      <img id="user-photo" src="assets/img/avatar1.png" alt="Foto do usuário" onclick="toggleAvatarOptions()">
+      <div class="photo-options" id="photo-options">
+        <img src="assets/img/avatar/avatar1.avif" onclick="changeAvatar('avatar1.avif')">
+        <img src="assets/img/avatar/avatar2.avif" onclick="changeAvatar('avatar2.avif')">
+        <img src="assets/img/avatar/avatar3.avif" onclick="changeAvatar('avatar3.avif')">
       </div>
     </div>
-  </div>
+    <h1>Bem-vindo(a), <strong id="username">USUÁRIO</strong></h1>
+    <button class="logout-btn" onclick="logout()">Sair</button>
+  </header>
+
+  <main class="painel-main">
+    <div class="action-buttons">
+      <button id="perfil-btn" class="perfil-btn" onclick="goToPerfil()">Perfil Completo</button>
+      <button id="info-btn" class="info-btn" onclick="goToInformacoes()">Informações Pessoais</button>
+    </div>
+
+    <section class="test-section">
+      <div class="test-card" id="stress-card" onclick="goToTest('stress.html')">
+        <img src="assets/img/stress.jpg" alt="Teste de Stress">
+        <h3>Teste de Stress</h3>
+      </div>
+      <div class="test-card" id="perfil-card" onclick="goToTest('perfil.html')">
+        <img src="assets/img/perfil.jpg" alt="Teste de Perfil">
+        <h3>Teste de Perfil</h3>
+      </div>
+      <div class="test-card" id="humor-card" onclick="goToTest('humor.html')">
+        <img src="assets/img/humor.jpg" alt="Teste de Humor">
+        <h3>Teste de Humor</h3>
+      </div>
+    </section>
+  </main>
+
+  <footer class="painel-footer">
+    <p>Todos os direitos desse site são reservados a <strong>Tiago Arrigoni</strong></p>
+  </footer>
+
+  <script>
+    // Exibir/ocultar opções de avatar
+    function toggleAvatarOptions() {
+      const options = document.getElementById("photo-options");
+      options.style.display = options.style.display === "flex" ? "none" : "flex";
+    }
+
+    // Alterar avatar
+    function changeAvatar(imgName) {
+      const mainPhoto = document.getElementById("user-photo");
+      mainPhoto.src = "assets/img/avatar/" + imgName;
+      document.getElementById("photo-options").style.display = "none";
+    }
+
+    // Botões principais
+    function goToPerfil() {
+      window.location.href = "resultadoPerfil.html";
+    }
+
+    function goToInformacoes() {
+      window.location.href = "informacoes.html";
+    }
+
+    function goToTest(page) {
+      window.location.href = page;
+    }
+
+    function logout() {
+      window.location.href = "index.html";
+    }
+
+    // Buscar nome e status dos testes
+    window.addEventListener("DOMContentLoaded", async () => {
+      try {
+        // Nome do usuário logado
+        const userRes = await fetch("/session-user");
+        if (userRes.ok) {
+          const user = await userRes.json();
+          document.getElementById("username").textContent = user.username.toUpperCase();
+        }
+
+        // Status dos testes
+        const testsRes = await fetch("/my-tests");
+        let completedCount = 0;
+
+        if (testsRes.ok) {
+          const tests = await testsRes.json();
+          tests.forEach(t => {
+            const card = document.getElementById(`${t.test_type}-card`);
+            if (card) {
+              card.classList.add("completed");
+              completedCount++;
+            }
+          });
+        }
+
+        // Mudar cor do botão "Perfil Completo"
+        const perfilBtn = document.getElementById("perfil-btn");
+        if (completedCount === 3) perfilBtn.classList.add("completed");
+
+      } catch (err) {
+        console.error("Erro ao carregar dados:", err);
+      }
+    });
+  </script>
 </body>
 </html>
