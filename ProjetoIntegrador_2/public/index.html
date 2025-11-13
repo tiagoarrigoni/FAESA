@@ -42,6 +42,24 @@
       </form>
 
    </div>
+
+   <!-- Script que mostra mensagem de sucesso após cadastro e limpa a URL -->
+   <script>
+      (function () {
+         const params = new URLSearchParams(window.location.search);
+
+         // Se veio ?success=1 (após registro), mostramos mensagem e removemos a query string
+         if (params.get("success") === "1") {
+            // Aqui usamos alert simples; se preferir um modal estilizado, eu posso trocar.
+            alert("Cadastro realizado com sucesso!");
+
+            // Remover query string sem recarregar a página
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+         }
+
+      })();
+   </script>
 </body>
 
 </html>

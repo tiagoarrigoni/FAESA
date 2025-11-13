@@ -62,6 +62,19 @@
                 e.preventDefault();
             }
         });
+
+
+        const params = new URLSearchParams(window.location.search);
+
+        if (params.get("error") === "UsuarioOuEmailExistente") {
+            alert("Usuário ou Email já cadastrado!");
+        }
+
+        if (params.get("error") === "ErroServidor") {
+            alert("Erro interno ao registrar. Tente novamente.");
+        }
+
+
     </script>
 </body>
 

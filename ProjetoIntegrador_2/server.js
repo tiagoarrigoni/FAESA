@@ -22,7 +22,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
   else console.log("✅ Banco SQLite conectado com sucesso em:", dbPath);
 });
 
-// ======= Criação das tabelas =======
+// ======= Criação das tabelas (created_at em ISO 8601 UTC) =======
 db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
@@ -40,25 +40,22 @@ db.serialize(() => {
       test_type TEXT,
       score INTEGER,
       result_text TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
       FOREIGN KEY (user_id) REFERENCES users(id)
     )
   `);
 
   db.run(`
-  CREATE TABLE IF NOT EXISTS user_info (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER UNIQUE,
-    nome_completo TEXT,
-    nascimento TEXT,
-    peso REAL,
-    altura REAL,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-  )
-`);
-
-
-
+    CREATE TABLE IF NOT EXISTS user_info (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER UNIQUE,
+      nome_completo TEXT,
+      nascimento TEXT,
+      peso REAL,
+      altura REAL,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
 });
 
 // ======= Middlewares =======
@@ -77,11 +74,14 @@ app.use(
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
   db.get("SELECT * FROM users WHERE username = ?", [username], async (err, user) => {
-    if (err) return res.status(500).send("Erro no servidor");
-    if (!user) return res.status(400).send("Usuário não encontrado");
+    if (err) {
+      console.error("Erro DB /login:", err);
+      return res.status(500).json({ message: "Erro no servidor" });
+    }
+    if (!user) return res.status(400).json({ message: "Usuário não encontrado" });
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(400).send("Senha incorreta");
+    if (!match) return res.status(400).json({ message: "Senha incorreta" });
 
     req.session.userId = user.id;
     res.redirect("/painel.html");
@@ -90,23 +90,38 @@ app.post("/login", (req, res) => {
 
 app.post("/register", async (req, res) => {
   const { username, email, password } = req.body;
-  const hashed = await bcrypt.hash(password, 10);
-  db.run(
-    "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
-    [username, email, hashed],
-    (err) => {
-      if (err) {
-        console.error(err);
-        return res.status(400).send("Erro ao registrar usuário");
+
+  try {
+    const hashed = await bcrypt.hash(password, 10);
+
+    db.run(
+      "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
+      [username, email, hashed],
+      (err) => {
+        if (err) {
+          console.error("Erro ao registrar usuário:", err);
+
+          if (err.code === "SQLITE_CONSTRAINT") {
+            return res.redirect("/register.html?error=UsuarioOuEmailExistente");
+          }
+
+          return res.redirect("/register.html?error=ErroServidor");
+        }
+
+        // sucesso — voltar ao login com mensagem
+        res.redirect("/index.html?success=1");
       }
-      res.redirect("/index.html");
-    }
-  );
+    );
+  } catch (error) {
+    console.error("Erro inesperado:", error);
+    res.redirect("/register.html?error=ErroServidor");
+  }
 });
+
 
 // ======= Middleware de autenticação =======
 function auth(req, res, next) {
-  if (!req.session.userId) return res.status(401).send("Não autorizado");
+  if (!req.session.userId) return res.status(401).json({ message: "Não autorizado" });
   next();
 }
 
@@ -119,7 +134,10 @@ app.post("/save-test", auth, (req, res) => {
     "SELECT * FROM test_results WHERE user_id = ? AND test_type = ? ORDER BY created_at DESC LIMIT 1",
     [userId, test_type],
     (err, lastTest) => {
-      if (err) return res.status(500).send("Erro ao verificar último teste");
+      if (err) {
+        console.error("Erro ao verificar último teste:", err);
+        return res.status(500).json({ message: "Erro ao verificar último teste" });
+      }
 
       if (lastTest) {
         const lastDate = new Date(lastTest.created_at);
@@ -127,7 +145,7 @@ app.post("/save-test", auth, (req, res) => {
         const diffDays = (now - lastDate) / (1000 * 60 * 60 * 24);
         if (diffDays < 30) {
           return res
-            .status(403)
+            .status(409)
             .json({ message: `Você já fez o teste ${test_type} há menos de 30 dias.` });
         }
       }
@@ -135,9 +153,13 @@ app.post("/save-test", auth, (req, res) => {
       db.run(
         "INSERT INTO test_results (user_id, test_type, score, result_text) VALUES (?, ?, ?, ?)",
         [userId, test_type, score, result_text],
-        (err) => {
-          if (err) return res.status(500).send("Erro ao salvar resultado");
-          res.json({ message: "Resultado salvo com sucesso!" });
+        function (err) {
+          if (err) {
+            console.error("Erro ao salvar resultado:", err);
+            return res.status(500).json({ message: "Erro ao salvar resultado" });
+          }
+          // retorna id do registro criado
+          res.json({ message: "Resultado salvo com sucesso!", id: this.lastID });
         }
       );
     }
@@ -151,23 +173,22 @@ app.post("/save-info", auth, (req, res) => {
   db.get("SELECT * FROM user_info WHERE user_id = ?", [userId], (err, row) => {
     if (err) {
       console.error("Erro ao buscar user_info:", err);
-      return res.status(500).send("Erro ao buscar informações");
+      return res.status(500).json({ message: "Erro ao buscar informações" });
     }
 
     if (row) {
-      // Já existe: bloqueia edição
+      // Já existe: bloquear edição
       return res
-        .status(403)
+        .status(409)
         .json({ message: "As informações pessoais já foram preenchidas e não podem ser alteradas." });
     } else {
-      // Cria novo registro
       db.run(
         "INSERT INTO user_info (user_id, nome_completo, nascimento, peso, altura) VALUES (?, ?, ?, ?, ?)",
         [userId, nome_completo, nascimento, peso, altura],
         (err2) => {
           if (err2) {
             console.error("Erro ao salvar user_info:", err2);
-            return res.status(500).send("Erro ao salvar informações");
+            return res.status(500).json({ message: "Erro ao salvar informações" });
           }
           res.json({ message: "Informações salvas com sucesso!" });
         }
@@ -176,9 +197,6 @@ app.post("/save-info", auth, (req, res) => {
   });
 });
 
-
-
-
 // ======= Ver histórico de testes =======
 app.get("/my-tests", auth, (req, res) => {
   const userId = req.session.userId;
@@ -186,7 +204,10 @@ app.get("/my-tests", auth, (req, res) => {
     "SELECT test_type, score, result_text, created_at FROM test_results WHERE user_id = ? ORDER BY created_at DESC",
     [userId],
     (err, results) => {
-      if (err) return res.status(500).send("Erro ao buscar histórico");
+      if (err) {
+        console.error("Erro ao buscar histórico:", err);
+        return res.status(500).json({ message: "Erro ao buscar histórico" });
+      }
       res.json(results);
     }
   );
@@ -215,11 +236,8 @@ app.get("/get-test", auth, (req, res) => {
       const diffDays = (now - lastDate) / (1000 * 60 * 60 * 24);
 
       if (diffDays < 30) {
-        return res.json({
-          exists: true,
-          score: lastTest.score,
-          result_text: lastTest.result_text,
-        });
+        // NÃO retornamos result_text aqui (front mostrará mensagem fixa)
+        return res.json({ exists: true });
       }
 
       res.json({ exists: false });
@@ -230,7 +248,10 @@ app.get("/get-test", auth, (req, res) => {
 // ======= Retorna usuário logado =======
 app.get("/session-user", auth, (req, res) => {
   db.get("SELECT username FROM users WHERE id = ?", [req.session.userId], (err, user) => {
-    if (err) return res.status(500).send("Erro ao buscar usuário");
+    if (err) {
+      console.error("Erro ao buscar usuário:", err);
+      return res.status(500).json({ message: "Erro ao buscar usuário" });
+    }
     res.json(user || { username: "Usuário" });
   });
 });
@@ -245,9 +266,7 @@ app.get("/user-info", auth, (req, res) => {
       return res.status(500).json({ message: "Erro ao buscar informações pessoais" });
     }
 
-    // Se não houver registro, retorna estrutura vazia (evita erro no front)
     if (!info) {
-      console.warn("Nenhuma informação pessoal encontrada para o usuário:", userId);
       return res.json({
         nome_completo: null,
         nascimento: null,
@@ -256,7 +275,6 @@ app.get("/user-info", auth, (req, res) => {
       });
     }
 
-    // Retorna dados completos do usuário
     res.json({
       nome_completo: info.nome_completo,
       nascimento: info.nascimento,
@@ -265,9 +283,6 @@ app.get("/user-info", auth, (req, res) => {
     });
   });
 });
-
-
-
 
 // ======= Inicializa o servidor =======
 app.listen(PORT, () => {
